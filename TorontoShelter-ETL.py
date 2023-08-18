@@ -38,9 +38,22 @@ if os.path.exists(output_file_path):
 total_data_count = 0
 new_data_count = 0
 
+# Logic to determine if header has been appended
+header_appended = False
+current_header = None  # Initialize current_header
+
+# Check if the file already exists and if its line count is greater than 0
+if os.path.exists(output_file_path) and os.path.getsize(output_file_path) > 0:
+    header_appended = True
+    
+    # Read the existing header from the CSV file
+    with open(output_file_path, "r", newline="", encoding="utf-8") as existing_file:
+        existing_csv_reader = csv.reader(existing_file)
+        current_header = next(existing_csv_reader)  # Read the header
+
+# Open the output file for writing
 with open(output_file_path, "a", newline="", encoding="utf-8") as output_file:
     csv_writer = csv.writer(output_file)
-    current_header = None
 
     # To get resource data:
     for idx, resource in enumerate(package["result"]["resources"]):
@@ -60,18 +73,19 @@ with open(output_file_path, "a", newline="", encoding="utf-8") as output_file:
                 cleaned_rows.append(cleaned_row)
 
             # When data was appended, it appended headers also, causing a bit of problem
-            #Since all column names are the same, I had to pick 1st index of the columns
-            if idx == 0:
-                current_header = cleaned_rows[0]
-                csv_writer.writerow(["IDEMPOTENT_KEY"] + current_header.split(","))  # This added the indempotent_key to the header
+            if idx == 0 and not header_appended:
+                csv_writer.writerow(["IDEMPOTENT_KEY"] + current_header.split(","))  # This added the idempotent_key to the header
+                header_appended = True
+
+                # You can move this line outside the if block
+                date_index = current_header.split(",").index("OCCUPANCY_DATE")
 
             # Write the cleaned data to the CSV file, skip header for appended data
             for cleaned_row in cleaned_rows[1:]:
                 if cleaned_row.strip():
                     data_fields = cleaned_row.split(",")
-
                     # This logic give a uniform OCCUPANCY_DATE to yyyy-mm-dd format
-                    date_index = current_header.split(",").index("OCCUPANCY_DATE")
+                    date_index = current_header.index("OCCUPANCY_DATE")
                     original_date = data_fields[date_index]
                     
                     # Assumptions of different date formats - I handle the different date formats here
@@ -88,7 +102,7 @@ with open(output_file_path, "a", newline="", encoding="utf-8") as output_file:
                         data_fields[date_index] = formatted_date
 
                     # Create idempotent key by combining _id and OCCUPANCY_DATE
-                    id_index = current_header.split(",").index("_id")
+                    id_index = current_header.index("_id")
                     id_value = data_fields[id_index]
                     idempotent_key = f"{id_value}_{formatted_date}"
 
@@ -105,3 +119,5 @@ with open(output_file_path, "a", newline="", encoding="utf-8") as output_file:
 print("Data processing complete.")
 print("Total data count:", total_data_count)
 print("New data count:", new_data_count)
+
+
