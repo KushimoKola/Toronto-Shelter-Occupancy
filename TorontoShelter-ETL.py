@@ -23,7 +23,7 @@ output_dir = os.getcwd()  # This is to get my current working directory
 os.makedirs(output_dir, exist_ok=True)
 
 # Since Data were in different files, I had to create a single directory to store all the files
-output_file_path = os.path.join(output_dir, "combined_results.csv")
+output_file_path = os.path.join(output_dir, "toronto_shelter_occupancy.csv")
 
 # This to determine count of total data and new data
 total_data_count = 0
